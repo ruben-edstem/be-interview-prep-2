@@ -154,6 +154,32 @@ class OrderApiIntegrationTest {
 	}
 
 	@Test
+	void overflowingQuantitiesCannotInflateStock() throws Exception {
+		String productId = createProduct("Overflow widget", 5);
+		long ordersBefore = orders.count();
+
+		placeOrder("overflow-" + UUID.randomUUID(), line(productId, Long.MAX_VALUE), line(productId, 1))
+				.andExpect(status().isBadRequest());
+		placeOrder("too-big-" + UUID.randomUUID(), line(productId, 10_001))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.fieldErrors[0].field").value("items[0].quantity"));
+
+		assertThat(stockOf(productId)).isEqualTo(5);
+		assertThat(orders.count()).isEqualTo(ordersBefore);
+	}
+
+	@Test
+	void repeatedLinesAreSummedAgainstStock() throws Exception {
+		String productId = createProduct("Summed widget", 5);
+
+		placeOrder("sum-" + UUID.randomUUID(), line(productId, 3), line(productId, 3))
+				.andExpect(status().isConflict())
+				.andExpect(jsonPath("$.error").value("INSUFFICIENT_STOCK"));
+
+		assertThat(stockOf(productId)).isEqualTo(5);
+	}
+
+	@Test
 	void failedOrderCanBeRetriedWithTheSameKeyOnceStockReturns() throws Exception {
 		String productId = createProduct("Restocked widget", 1);
 		String key = "failed-" + UUID.randomUUID();

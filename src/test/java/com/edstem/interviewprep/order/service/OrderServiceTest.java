@@ -20,6 +20,7 @@ import com.edstem.interviewprep.order.entity.OrderStatus;
 import com.edstem.interviewprep.order.exception.IdempotencyKeyReusedException;
 import com.edstem.interviewprep.order.exception.InsufficientStockException;
 import com.edstem.interviewprep.order.exception.InvalidIdempotencyKeyException;
+import com.edstem.interviewprep.order.exception.InvalidQuantityException;
 import com.edstem.interviewprep.order.exception.InventoryItemNotFoundException;
 import com.edstem.interviewprep.order.exception.OrderNotFoundException;
 import com.edstem.interviewprep.order.repository.InventoryItemRepository;
@@ -85,6 +86,26 @@ class OrderServiceTest {
 		assertThat(placed.order().getItems()).hasSize(1);
 		assertThat(placed.order().getItems().get(0).getQuantity()).isEqualTo(5);
 		verify(inventory).reserve(LOW_ID, 5);
+	}
+
+	@Test
+	void placeRejectsRepeatedLinesWhoseTotalOverflows() {
+		List<OrderLine> lines = List.of(new OrderLine(LOW_ID, Long.MAX_VALUE), new OrderLine(LOW_ID, 1));
+
+		assertThrows(InvalidQuantityException.class, () -> service.place("key", lines));
+
+		verify(orders, never()).saveAndFlush(any(CustomerOrder.class));
+		verify(inventory, never()).reserve(any(UUID.class), anyLong());
+	}
+
+	@Test
+	void placeRejectsZeroAndNegativeQuantities() {
+		assertThrows(InvalidQuantityException.class,
+				() -> service.place("key", List.of(new OrderLine(LOW_ID, 0))));
+		assertThrows(InvalidQuantityException.class,
+				() -> service.place("key", List.of(new OrderLine(LOW_ID, -5))));
+
+		verify(inventory, never()).reserve(any(UUID.class), anyLong());
 	}
 
 	@Test

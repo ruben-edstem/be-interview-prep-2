@@ -15,6 +15,7 @@ import com.edstem.interviewprep.order.entity.OrderItem;
 import com.edstem.interviewprep.order.exception.IdempotencyKeyReusedException;
 import com.edstem.interviewprep.order.exception.InsufficientStockException;
 import com.edstem.interviewprep.order.exception.InvalidIdempotencyKeyException;
+import com.edstem.interviewprep.order.exception.InvalidQuantityException;
 import com.edstem.interviewprep.order.exception.InventoryItemNotFoundException;
 import com.edstem.interviewprep.order.exception.OrderNotFoundException;
 import com.edstem.interviewprep.order.repository.InventoryItemRepository;
@@ -115,7 +116,16 @@ public class OrderService {
 
 	static Map<UUID, Long> mergeByProduct(List<OrderLine> lines) {
 		Map<UUID, Long> quantities = new TreeMap<>();
-		lines.forEach(line -> quantities.merge(line.productId(), line.quantity(), Long::sum));
+		for (OrderLine line : lines) {
+			if (line.quantity() < 1) {
+				throw new InvalidQuantityException(line.productId());
+			}
+			try {
+				quantities.merge(line.productId(), line.quantity(), Math::addExact);
+			} catch (ArithmeticException e) {
+				throw new InvalidQuantityException(line.productId());
+			}
+		}
 		return quantities;
 	}
 
