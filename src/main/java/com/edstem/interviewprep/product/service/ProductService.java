@@ -1,0 +1,50 @@
+package com.edstem.interviewprep.product.service;
+
+import java.util.Set;
+import java.util.TreeSet;
+
+import com.edstem.interviewprep.common.dto.PageResponse;
+import com.edstem.interviewprep.product.dto.response.ProductResponse;
+import com.edstem.interviewprep.product.exception.InvalidProductQueryException;
+import com.edstem.interviewprep.product.repository.ProductRepository;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+@Service
+public class ProductService {
+
+	private static final Set<String> SORTABLE_FIELDS =
+			Set.of("id", "name", "category", "priceCents", "stock", "rating", "createdAt");
+	private static final Sort DEFAULT_SORT = Sort.by("name");
+	private static final Sort TIE_BREAKER = Sort.by("id");
+
+	private final ProductRepository productRepository;
+
+	public ProductService(ProductRepository productRepository) {
+		this.productRepository = productRepository;
+	}
+
+	@Transactional(readOnly = true)
+	public PageResponse<ProductResponse> list(Pageable pageable) {
+		Pageable stablePageable = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), sortFor(pageable));
+
+		return PageResponse.of(productRepository.findAll(stablePageable), ProductResponse::from);
+	}
+
+	private Sort sortFor(Pageable pageable) {
+		Sort requested = pageable.getSort();
+		requested.forEach(order -> {
+			if (!SORTABLE_FIELDS.contains(order.getProperty())) {
+				throw new InvalidProductQueryException(
+						"Cannot sort by '" + order.getProperty() + "'. Sortable fields: " + new TreeSet<>(SORTABLE_FIELDS));
+			}
+		});
+
+		Sort sort = requested.isSorted() ? requested : DEFAULT_SORT;
+
+		return sort.and(TIE_BREAKER);
+	}
+}
