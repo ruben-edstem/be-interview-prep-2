@@ -5,3 +5,12 @@
 | 3 | Authentication & Roles | |
 | 4 | Product Catalog | |
 | 5 | Order Service | |
+
+## Configuration
+
+The app needs `JWT_SECRET` (at least 32 bytes) and refuses to start without it. `ADMIN_EMAIL` and `ADMIN_PASSWORD` are optional and create the first ADMIN on startup.
+
+```bash
+export JWT_SECRET="$(openssl rand -base64 48)"
+./mvnw spring-boot:run
+```
