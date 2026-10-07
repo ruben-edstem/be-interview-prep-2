@@ -40,7 +40,7 @@ class RedirectControllerTest {
 
 		mockMvc.perform(get("/nothere"))
 				.andExpect(status().isNotFound())
-				.andExpect(jsonPath("$.code").value("SHORT_URL_NOT_FOUND"));
+				.andExpect(jsonPath("$.error").value("SHORT_URL_NOT_FOUND"));
 	}
 
 	@Test
@@ -49,7 +49,7 @@ class RedirectControllerTest {
 
 		mockMvc.perform(get("/old0001"))
 				.andExpect(status().isGone())
-				.andExpect(jsonPath("$.code").value("SHORT_URL_EXPIRED"));
+				.andExpect(jsonPath("$.error").value("SHORT_URL_EXPIRED"));
 	}
 
 	@Test

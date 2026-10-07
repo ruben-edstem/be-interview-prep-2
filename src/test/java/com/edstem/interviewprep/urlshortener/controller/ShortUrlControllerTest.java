@@ -76,8 +76,8 @@ class ShortUrlControllerTest {
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("{\"url\":\"" + url + "\"}"))
 				.andExpect(status().isBadRequest())
-				.andExpect(jsonPath("$.code").value("VALIDATION_FAILED"))
-				.andExpect(jsonPath("$.errors.url").exists());
+				.andExpect(jsonPath("$.error").value("VALIDATION_FAILED"))
+				.andExpect(jsonPath("$.fieldErrors[?(@.field=='url')]").exists());
 
 		verify(service, never()).create(any(), any());
 	}
@@ -88,7 +88,7 @@ class ShortUrlControllerTest {
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("{}"))
 				.andExpect(status().isBadRequest())
-				.andExpect(jsonPath("$.errors.url").exists());
+				.andExpect(jsonPath("$.fieldErrors[?(@.field=='url')]").exists());
 	}
 
 	@Test
@@ -97,7 +97,7 @@ class ShortUrlControllerTest {
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("{\"url\":\"https://example.com\",\"expiresAt\":\"2000-01-01T00:00:00Z\"}"))
 				.andExpect(status().isBadRequest())
-				.andExpect(jsonPath("$.errors.expiresAt").exists());
+				.andExpect(jsonPath("$.fieldErrors[?(@.field=='expiresAt')]").exists());
 	}
 
 	@Test
@@ -128,7 +128,7 @@ class ShortUrlControllerTest {
 
 		mockMvc.perform(get("/api/v1/urls/nothere/stats"))
 				.andExpect(status().isNotFound())
-				.andExpect(jsonPath("$.code").value("SHORT_URL_NOT_FOUND"));
+				.andExpect(jsonPath("$.error").value("SHORT_URL_NOT_FOUND"));
 	}
 
 	@Test
@@ -139,6 +139,6 @@ class ShortUrlControllerTest {
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("{\"url\":\"https://example.com\"}"))
 				.andExpect(status().isInternalServerError())
-				.andExpect(jsonPath("$.code").value("CODE_GENERATION_FAILED"));
+				.andExpect(jsonPath("$.error").value("CODE_GENERATION_FAILED"));
 	}
 }
