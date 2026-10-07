@@ -121,6 +121,23 @@ class ShortUrlServiceTest {
 	}
 
 	@Test
+	void getStatsReturnsTheStoredLink() {
+		ShortUrl stored = new ShortUrl("abc1234", "https://example.com/a", null);
+		when(repository.findByCode("abc1234")).thenReturn(Optional.of(stored));
+
+		ShortUrl stats = service.getStats("abc1234");
+
+		assertThat(stats).isSameAs(stored);
+	}
+
+	@Test
+	void getStatsRejectsUnknownCode() {
+		when(repository.findByCode("nothere")).thenReturn(Optional.empty());
+
+		assertThrows(ShortUrlNotFoundException.class, () -> service.getStats("nothere"));
+	}
+
+	@Test
 	void sameUrlSubmittedTwiceCreatesTwoIndependentLinks() {
 		when(codeGenerator.generate()).thenReturn("first01", "second2");
 		when(repository.saveAndFlush(any(ShortUrl.class))).thenAnswer(invocation -> invocation.getArgument(0));

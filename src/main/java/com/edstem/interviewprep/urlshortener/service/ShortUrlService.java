@@ -50,4 +50,9 @@ public class ShortUrlService {
 		repository.incrementVisitCount(code);
 		return shortUrl.getOriginalUrl();
 	}
+
+	@Transactional(readOnly = true)
+	public ShortUrl getStats(String code) {
+		return repository.findByCode(code).orElseThrow(() -> new ShortUrlNotFoundException(code));
+	}
 }
