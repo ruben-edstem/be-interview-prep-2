@@ -42,11 +42,11 @@ public class AdminBootstrap implements ApplicationRunner {
 
 		String email = properties.email().trim().toLowerCase(Locale.ROOT);
 		if (userRepository.existsByEmail(email)) {
-			log.info("Admin account {} already exists, leaving it unchanged", email);
+			log.info("Admin account already exists, leaving it unchanged");
 			return;
 		}
 
 		userRepository.save(new User(email, passwordEncoder.encode(properties.password()), Role.ADMIN));
-		log.info("Created admin account {}", email);
+		log.info("Created admin account");
 	}
 }
