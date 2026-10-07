@@ -3,6 +3,7 @@ package com.edstem.interviewprep.auth.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.edstem.interviewprep.auth.TestSecrets;
 import com.edstem.interviewprep.auth.config.JwtConfig;
 import com.edstem.interviewprep.auth.config.JwtProperties;
 import com.edstem.interviewprep.auth.dto.TokenResponse;
@@ -21,9 +22,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 class TokenServiceTest {
 
-	private static final String SECRET = "unit-test-secret-that-is-at-least-32-bytes";
-
-	private final JwtProperties properties = new JwtProperties(SECRET, Duration.ofMinutes(15));
+	private final JwtProperties properties = new JwtProperties(TestSecrets.randomJwtSecret(), Duration.ofMinutes(15));
 	private final JwtConfig jwtConfig = new JwtConfig();
 	private final JwtDecoder decoder = jwtConfig.jwtDecoder(properties);
 
@@ -54,7 +53,7 @@ class TokenServiceTest {
 
 	@Test
 	void tokenSignedWithAnotherSecretIsRejected() {
-		JwtProperties otherProperties = new JwtProperties("another-secret-that-is-at-least-32-bytes", Duration.ofMinutes(15));
+		JwtProperties otherProperties = new JwtProperties(TestSecrets.randomJwtSecret(), Duration.ofMinutes(15));
 		TokenService otherService = new TokenService(jwtConfig.jwtEncoder(otherProperties), otherProperties, Clock.systemUTC());
 		TokenResponse response = otherService.issueFor(userWithId(Role.USER));
 
