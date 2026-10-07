@@ -6,6 +6,8 @@ import static org.mockito.Mockito.clearInvocations;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -23,11 +25,13 @@ import com.edstem.interviewprep.product.entity.Product;
 import com.edstem.interviewprep.product.exception.ProductNotFoundException;
 import com.edstem.interviewprep.product.repository.ProductRepository;
 import com.edstem.interviewprep.product.service.ProductService;
+import com.jayway.jsonpath.JsonPath;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -185,6 +189,37 @@ class ProductCatalogIntegrationTest {
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.totalElements").value(1))
 				.andExpect(jsonPath("$.totalPages").value(1))
+				.andExpect(jsonPath("$.content[0].id").value(id.toString()));
+	}
+
+	@Test
+	void productCreatedWithPaddedCategoryIsFoundByTheTrimmedFilter() throws Exception {
+		String body = "{\"name\":\" Padded Gizmo \",\"category\":\" Oddities \",\"priceCents\":500,\"stock\":2,\"rating\":3.0}";
+		String created = mockMvc.perform(post(PRODUCTS).contentType(MediaType.APPLICATION_JSON).content(body))
+				.andExpect(status().isCreated())
+				.andReturn().getResponse().getContentAsString();
+		String id = JsonPath.read(created, "$.id");
+		createdIds.add(UUID.fromString(id));
+
+		mockMvc.perform(get(PRODUCTS).param("category", "Oddities"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.totalElements").value(1))
+				.andExpect(jsonPath("$.content[0].id").value(id))
+				.andExpect(jsonPath("$.content[0].category").value("Oddities"))
+				.andExpect(jsonPath("$.content[0].name").value("Padded Gizmo"));
+	}
+
+	@Test
+	void productUpdatedWithPaddedCategoryIsFoundByTheTrimmedFilter() throws Exception {
+		UUID id = createProduct("Plain Gizmo", "Misc", 500, 2, 3.0);
+		String body = "{\"name\":\"Plain Gizmo\",\"category\":\"  Curios\",\"priceCents\":500,\"stock\":2,\"rating\":3.0}";
+
+		mockMvc.perform(put(PRODUCTS + "/" + id).contentType(MediaType.APPLICATION_JSON).content(body))
+				.andExpect(status().isOk());
+
+		mockMvc.perform(get(PRODUCTS).param("category", "Curios"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.totalElements").value(1))
 				.andExpect(jsonPath("$.content[0].id").value(id.toString()));
 	}
 

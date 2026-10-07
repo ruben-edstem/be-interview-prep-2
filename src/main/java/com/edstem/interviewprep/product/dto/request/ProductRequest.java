@@ -29,4 +29,9 @@ public record ProductRequest(
 		@DecimalMin(value = "0.0", message = "Rating must be between 0 and 5")
 		@DecimalMax(value = "5.0", message = "Rating must be between 0 and 5")
 		Double rating) {
+
+	public ProductRequest {
+		name = name == null ? null : name.trim();
+		category = category == null ? null : category.trim();
+	}
 }

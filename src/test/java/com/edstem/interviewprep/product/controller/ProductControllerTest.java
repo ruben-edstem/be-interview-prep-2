@@ -174,6 +174,20 @@ class ProductControllerTest {
 	}
 
 	@Test
+	void createPassesTrimmedNameAndCategoryToService() throws Exception {
+		when(productService.create(any(ProductRequest.class))).thenReturn(response(UUID.randomUUID(), "Desk"));
+		String body = "{\"name\":\"  Desk \",\"category\":\" Home \",\"priceCents\":4999,\"stock\":3,\"rating\":4.5}";
+
+		mockMvc.perform(post(PRODUCTS).contentType(MediaType.APPLICATION_JSON).content(body))
+				.andExpect(status().isCreated());
+
+		ArgumentCaptor<ProductRequest> captor = ArgumentCaptor.forClass(ProductRequest.class);
+		verify(productService).create(captor.capture());
+		assertThat(captor.getValue().name()).isEqualTo("Desk");
+		assertThat(captor.getValue().category()).isEqualTo("Home");
+	}
+
+	@Test
 	void createReturnsFieldErrorsForInvalidInput() throws Exception {
 		String body = "{\"name\":\" \",\"category\":\"Home\",\"priceCents\":0,\"stock\":-1,\"rating\":9}";
 
