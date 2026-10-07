@@ -125,6 +125,30 @@ class OrderControllerTest {
 	}
 
 	@Test
+	void placeRejectsAQuantityAboveTheLimit() throws Exception {
+		mockMvc.perform(post("/api/v1/orders")
+						.header("Idempotency-Key", "key")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(body(PRODUCT_ID, Long.MAX_VALUE)))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.fieldErrors[0].field").value("items[0].quantity"));
+
+		verify(service, never()).place(any(), any());
+	}
+
+	@Test
+	void placeAcceptsTheLargestAllowedQuantity() throws Exception {
+		CustomerOrder order = new CustomerOrder("key", "hash", List.of(new OrderItem(PRODUCT_ID, 10_000)));
+		when(service.place(eq("key"), any())).thenReturn(new PlacedOrder(order, false));
+
+		mockMvc.perform(post("/api/v1/orders")
+						.header("Idempotency-Key", "key")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(body(PRODUCT_ID, 10_000)))
+				.andExpect(status().isCreated());
+	}
+
+	@Test
 	void getReturnsTheOrder() throws Exception {
 		UUID id = UUID.randomUUID();
 		when(service.get(id)).thenReturn(new CustomerOrder("key", "hash", List.of(new OrderItem(PRODUCT_ID, 1))));
