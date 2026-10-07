@@ -96,14 +96,19 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 				? problem.getDetail()
 				: status.getReasonPhrase();
 
-		return respond(status, status.name(), message, path(request), List.of());
+		return respond(headers, status, status.name(), message, path(request), List.of());
 	}
 
 	private ResponseEntity<Object> respond(HttpStatus status, String code, String message, String path,
 			List<FieldViolation> violations) {
+		return respond(HttpHeaders.EMPTY, status, code, message, path, violations);
+	}
+
+	private ResponseEntity<Object> respond(HttpHeaders headers, HttpStatus status, String code, String message,
+			String path, List<FieldViolation> violations) {
 		ErrorResponse body = new ErrorResponse(Instant.now(), status.value(), code, message, path, violations);
 
-		return ResponseEntity.status(status).contentType(MediaType.APPLICATION_JSON).body(body);
+		return ResponseEntity.status(status).headers(headers).contentType(MediaType.APPLICATION_JSON).body(body);
 	}
 
 	private String path(WebRequest request) {

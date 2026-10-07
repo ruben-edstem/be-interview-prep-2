@@ -11,6 +11,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -173,7 +174,8 @@ class GlobalExceptionHandlerTest {
 		mockMvc.perform(patch(TASKS))
 				.andExpect(status().isMethodNotAllowed())
 				.andExpect(jsonPath("$.status").value(405))
-				.andExpect(jsonPath("$.error").value("METHOD_NOT_ALLOWED"));
+				.andExpect(jsonPath("$.error").value("METHOD_NOT_ALLOWED"))
+				.andExpect(header().string("Allow", containsString("POST")));
 	}
 
 	@Test
