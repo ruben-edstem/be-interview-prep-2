@@ -2,7 +2,6 @@ package com.edstem.interviewprep.auth.config;
 
 import com.nimbusds.jose.jwk.source.ImmutableSecret;
 import java.nio.charset.StandardCharsets;
-import java.time.Clock;
 import java.time.Duration;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
@@ -22,11 +21,6 @@ import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
 public class JwtConfig {
 
 	private static final MacAlgorithm ALGORITHM = MacAlgorithm.HS256;
-
-	@Bean
-	public Clock clock() {
-		return Clock.systemUTC();
-	}
 
 	@Bean
 	public JwtEncoder jwtEncoder(JwtProperties properties) {

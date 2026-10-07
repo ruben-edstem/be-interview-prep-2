@@ -18,16 +18,19 @@ import org.springframework.security.web.SecurityFilterChain;
 @EnableWebSecurity
 public class SecurityConfig {
 
+	private static final String AUTH_API = "/api/v1/auth/**";
+	private static final String USERS_API = "/api/v1/users/**";
+
 	@Bean
 	public SecurityFilterChain securityFilterChain(HttpSecurity http, JsonSecurityErrorHandler errorHandler)
 			throws Exception {
 		http
+				.securityMatcher(AUTH_API, USERS_API)
 				.csrf(AbstractHttpConfigurer::disable)
 				.httpBasic(AbstractHttpConfigurer::disable)
 				.formLogin(AbstractHttpConfigurer::disable)
 				.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 				.authorizeHttpRequests(requests -> requests
-						.requestMatchers("/error").permitAll()
 						.requestMatchers(HttpMethod.POST, "/api/v1/auth/register", "/api/v1/auth/login").permitAll()
 						.requestMatchers("/api/v1/users").hasRole("ADMIN")
 						.anyRequest().authenticated())

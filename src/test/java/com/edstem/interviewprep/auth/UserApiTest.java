@@ -61,7 +61,8 @@ class UserApiTest extends AbstractAuthApiTest {
 				.andExpect(status().isUnauthorized())
 				.andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
 				.andExpect(jsonPath("$.status").value(401))
-				.andExpect(jsonPath("$.error").value("Unauthorized"));
+				.andExpect(jsonPath("$.error").value("UNAUTHORIZED"))
+				.andExpect(jsonPath("$.path").value("/api/v1/users/me"));
 	}
 
 	@Test
@@ -104,7 +105,8 @@ class UserApiTest extends AbstractAuthApiTest {
 				.andExpect(status().isForbidden())
 				.andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
 				.andExpect(jsonPath("$.status").value(403))
-				.andExpect(jsonPath("$.error").value("Forbidden"));
+				.andExpect(jsonPath("$.error").value("FORBIDDEN"))
+				.andExpect(jsonPath("$.path").value("/api/v1/users"));
 	}
 
 	@Test

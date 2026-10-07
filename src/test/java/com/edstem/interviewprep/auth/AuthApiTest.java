@@ -55,6 +55,7 @@ class AuthApiTest extends AbstractAuthApiTest {
 				.andExpect(status().isConflict())
 				.andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
 				.andExpect(jsonPath("$.status").value(409))
+				.andExpect(jsonPath("$.error").value("EMAIL_ALREADY_REGISTERED"))
 				.andExpect(jsonPath("$.message").value("Email is already registered"));
 	}
 
@@ -63,8 +64,10 @@ class AuthApiTest extends AbstractAuthApiTest {
 		mockMvc.perform(register("not-an-email", "short"))
 				.andExpect(status().isBadRequest())
 				.andExpect(jsonPath("$.status").value(400))
-				.andExpect(jsonPath("$.fieldErrors.email").value("Email must be a valid address"))
-				.andExpect(jsonPath("$.fieldErrors.password").value("Password must be between 8 and 72 characters"));
+				.andExpect(jsonPath("$.error").value("VALIDATION_FAILED"))
+				.andExpect(jsonPath("$.fieldErrors[?(@.field=='email')].message").value("Email must be a valid address"))
+				.andExpect(jsonPath("$.fieldErrors[?(@.field=='password')].message")
+						.value("Password must be between 8 and 72 characters"));
 	}
 
 	@Test
@@ -98,8 +101,8 @@ class AuthApiTest extends AbstractAuthApiTest {
 	void loginRequiresBothFields() throws Exception {
 		mockMvc.perform(login("", ""))
 				.andExpect(status().isBadRequest())
-				.andExpect(jsonPath("$.fieldErrors.email").value("Email is required"))
-				.andExpect(jsonPath("$.fieldErrors.password").value("Password is required"));
+				.andExpect(jsonPath("$.fieldErrors[?(@.field=='email')].message").value("Email is required"))
+				.andExpect(jsonPath("$.fieldErrors[?(@.field=='password')].message").value("Password is required"));
 	}
 
 	@Test
