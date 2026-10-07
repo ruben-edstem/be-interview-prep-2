@@ -1,14 +1,18 @@
 package com.edstem.interviewprep.urlshortener.service;
 
+import java.time.Clock;
 import java.time.Instant;
 
 import com.edstem.interviewprep.urlshortener.entity.ShortUrl;
 import com.edstem.interviewprep.urlshortener.exception.CodeGenerationException;
+import com.edstem.interviewprep.urlshortener.exception.ShortUrlExpiredException;
+import com.edstem.interviewprep.urlshortener.exception.ShortUrlNotFoundException;
 import com.edstem.interviewprep.urlshortener.repository.ShortUrlRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class ShortUrlService {
@@ -18,10 +22,12 @@ public class ShortUrlService {
 
 	private final ShortUrlRepository repository;
 	private final ShortCodeGenerator codeGenerator;
+	private final Clock clock;
 
-	public ShortUrlService(ShortUrlRepository repository, ShortCodeGenerator codeGenerator) {
+	public ShortUrlService(ShortUrlRepository repository, ShortCodeGenerator codeGenerator, Clock clock) {
 		this.repository = repository;
 		this.codeGenerator = codeGenerator;
+		this.clock = clock;
 	}
 
 	public ShortUrl create(String originalUrl, Instant expiresAt) {
@@ -33,5 +39,15 @@ public class ShortUrlService {
 			}
 		}
 		throw new CodeGenerationException();
+	}
+
+	@Transactional
+	public String visit(String code) {
+		ShortUrl shortUrl = repository.findByCode(code).orElseThrow(() -> new ShortUrlNotFoundException(code));
+		if (shortUrl.isExpiredAt(clock.instant())) {
+			throw new ShortUrlExpiredException(code);
+		}
+		repository.incrementVisitCount(code);
+		return shortUrl.getOriginalUrl();
 	}
 }
