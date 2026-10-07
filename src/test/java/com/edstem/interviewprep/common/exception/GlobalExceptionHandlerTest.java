@@ -121,6 +121,54 @@ class GlobalExceptionHandlerTest {
 	}
 
 	@Test
+	void updateWithBlankTitleReturns400() throws Exception {
+		mockMvc.perform(put(TASKS + "/" + UUID.randomUUID()).contentType(MediaType.APPLICATION_JSON)
+						.content("{\"title\":\" \",\"status\":\"DONE\"}"))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.fieldErrors[?(@.field=='title')].message").value(hasItem("Title is required")));
+	}
+
+	@Test
+	void updateWithTitleLongerThan100CharactersReturns400() throws Exception {
+		String body = "{\"title\":\"" + "a".repeat(101) + "\",\"status\":\"DONE\"}";
+
+		mockMvc.perform(put(TASKS + "/" + UUID.randomUUID()).contentType(MediaType.APPLICATION_JSON).content(body))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.fieldErrors[?(@.field=='title')].message")
+						.value(hasItem("Title must be at most 100 characters")));
+	}
+
+	@Test
+	void updateWithPastDueDateReturns400() throws Exception {
+		String body = "{\"title\":\"Late\",\"status\":\"DONE\",\"dueDate\":\"" + LocalDate.now().minusDays(1) + "\"}";
+
+		mockMvc.perform(put(TASKS + "/" + UUID.randomUUID()).contentType(MediaType.APPLICATION_JSON).content(body))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.fieldErrors[?(@.field=='dueDate')].message")
+						.value(hasItem("Due date cannot be in the past")));
+	}
+
+	@Test
+	void updateWithDescriptionLongerThan1000CharactersReturns400() throws Exception {
+		String body = "{\"title\":\"Wordy\",\"status\":\"DONE\",\"description\":\"" + "d".repeat(1001) + "\"}";
+
+		mockMvc.perform(put(TASKS + "/" + UUID.randomUUID()).contentType(MediaType.APPLICATION_JSON).content(body))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.fieldErrors[?(@.field=='description')].message")
+						.value(hasItem("Description must be at most 1000 characters")));
+	}
+
+	@Test
+	void createWithDescriptionLongerThan1000CharactersReturns400() throws Exception {
+		String body = "{\"title\":\"Wordy\",\"description\":\"" + "d".repeat(1001) + "\"}";
+
+		mockMvc.perform(post(TASKS).contentType(MediaType.APPLICATION_JSON).content(body))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.fieldErrors[?(@.field=='description')].message")
+						.value(hasItem("Description must be at most 1000 characters")));
+	}
+
+	@Test
 	void malformedJsonReturns400() throws Exception {
 		mockMvc.perform(post(TASKS).contentType(MediaType.APPLICATION_JSON).content("{not json"))
 				.andExpect(status().isBadRequest())
