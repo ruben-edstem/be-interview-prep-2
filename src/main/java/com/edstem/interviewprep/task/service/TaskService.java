@@ -30,7 +30,7 @@ public class TaskService {
 		TaskStatus status = request.status() != null ? request.status() : TaskStatus.TODO;
 		Task task = new Task(request.title(), request.description(), status, request.dueDate());
 
-		return TaskResponse.from(taskRepository.save(task));
+		return TaskResponse.from(taskRepository.saveAndFlush(task));
 	}
 
 	@Transactional(readOnly = true)
