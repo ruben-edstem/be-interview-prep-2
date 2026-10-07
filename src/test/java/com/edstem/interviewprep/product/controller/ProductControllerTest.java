@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.UUID;
 
 import com.edstem.interviewprep.common.dto.PageResponse;
+import com.edstem.interviewprep.product.dto.request.ProductFilter;
 import com.edstem.interviewprep.product.dto.response.ProductResponse;
 import com.edstem.interviewprep.product.exception.InvalidProductQueryException;
 import com.edstem.interviewprep.product.service.ProductService;
@@ -39,7 +40,7 @@ class ProductControllerTest {
 	@Test
 	void listReturnsPageWithTotals() throws Exception {
 		ProductResponse product = new ProductResponse(UUID.randomUUID(), "Desk", "Home", 4_999, 3, 4.5, Instant.now());
-		when(productService.list(any(Pageable.class)))
+		when(productService.list(any(ProductFilter.class), any(Pageable.class)))
 				.thenReturn(new PageResponse<>(List.of(product), 0, 20, 41, 3));
 
 		mockMvc.perform(get(PRODUCTS))
@@ -52,7 +53,7 @@ class ProductControllerTest {
 
 	@Test
 	void listPassesPageAndSortToService() throws Exception {
-		when(productService.list(any(Pageable.class))).thenReturn(new PageResponse<>(List.of(), 2, 5, 0, 0));
+		when(productService.list(any(ProductFilter.class), any(Pageable.class))).thenReturn(new PageResponse<>(List.of(), 2, 5, 0, 0));
 
 		mockMvc.perform(get(PRODUCTS).param("page", "2").param("size", "5").param("sort", "priceCents,desc"))
 				.andExpect(status().isOk());
@@ -65,7 +66,7 @@ class ProductControllerTest {
 
 	@Test
 	void listCapsPageSizeAtOneHundred() throws Exception {
-		when(productService.list(any(Pageable.class))).thenReturn(new PageResponse<>(List.of(), 0, 100, 0, 0));
+		when(productService.list(any(ProductFilter.class), any(Pageable.class))).thenReturn(new PageResponse<>(List.of(), 0, 100, 0, 0));
 
 		mockMvc.perform(get(PRODUCTS).param("size", "500")).andExpect(status().isOk());
 
@@ -74,7 +75,7 @@ class ProductControllerTest {
 
 	@Test
 	void listReturns400WhenSortFieldIsRejected() throws Exception {
-		when(productService.list(any(Pageable.class)))
+		when(productService.list(any(ProductFilter.class), any(Pageable.class)))
 				.thenThrow(new InvalidProductQueryException("Cannot sort by 'password'"));
 
 		mockMvc.perform(get(PRODUCTS).param("sort", "password"))
@@ -83,9 +84,47 @@ class ProductControllerTest {
 				.andExpect(jsonPath("$.message").value("Cannot sort by 'password'"));
 	}
 
+	@Test
+	void listBindsAllFiltersIntoOneFilterObject() throws Exception {
+		when(productService.list(any(ProductFilter.class), any(Pageable.class)))
+				.thenReturn(new PageResponse<>(List.of(), 0, 20, 0, 0));
+
+		mockMvc.perform(get(PRODUCTS)
+						.param("category", "Books")
+						.param("minPriceCents", "500")
+						.param("maxPriceCents", "2500")
+						.param("inStock", "true")
+						.param("search", "novel"))
+				.andExpect(status().isOk());
+
+		ArgumentCaptor<ProductFilter> captor = ArgumentCaptor.forClass(ProductFilter.class);
+		verify(productService).list(captor.capture(), any(Pageable.class));
+		assertThat(captor.getValue()).isEqualTo(new ProductFilter("Books", 500L, 2_500L, true, "novel"));
+	}
+
+	@Test
+	void listWithoutFiltersPassesEmptyFilter() throws Exception {
+		when(productService.list(any(ProductFilter.class), any(Pageable.class)))
+				.thenReturn(new PageResponse<>(List.of(), 0, 20, 0, 0));
+
+		mockMvc.perform(get(PRODUCTS)).andExpect(status().isOk());
+
+		ArgumentCaptor<ProductFilter> captor = ArgumentCaptor.forClass(ProductFilter.class);
+		verify(productService).list(captor.capture(), any(Pageable.class));
+		assertThat(captor.getValue()).isEqualTo(ProductFilter.none());
+	}
+
+	@Test
+	void listReturns400WhenPriceFilterIsNotANumber() throws Exception {
+		mockMvc.perform(get(PRODUCTS).param("minPriceCents", "cheap"))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.error").value("INVALID_PARAMETER"))
+				.andExpect(jsonPath("$.fieldErrors[0].field").value("minPriceCents"));
+	}
+
 	private Pageable capturedPageable() {
 		ArgumentCaptor<Pageable> captor = ArgumentCaptor.forClass(Pageable.class);
-		verify(productService).list(captor.capture());
+		verify(productService).list(any(ProductFilter.class), captor.capture());
 
 		return captor.getValue();
 	}

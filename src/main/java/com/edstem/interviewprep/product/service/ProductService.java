@@ -4,9 +4,11 @@ import java.util.Set;
 import java.util.TreeSet;
 
 import com.edstem.interviewprep.common.dto.PageResponse;
+import com.edstem.interviewprep.product.dto.request.ProductFilter;
 import com.edstem.interviewprep.product.dto.response.ProductResponse;
 import com.edstem.interviewprep.product.exception.InvalidProductQueryException;
 import com.edstem.interviewprep.product.repository.ProductRepository;
+import com.edstem.interviewprep.product.specification.ProductSpecifications;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -28,10 +30,21 @@ public class ProductService {
 	}
 
 	@Transactional(readOnly = true)
-	public PageResponse<ProductResponse> list(Pageable pageable) {
+	public PageResponse<ProductResponse> list(ProductFilter filter, Pageable pageable) {
+		validatePriceRange(filter);
 		Pageable stablePageable = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), sortFor(pageable));
 
-		return PageResponse.of(productRepository.findAll(stablePageable), ProductResponse::from);
+		return PageResponse.of(
+				productRepository.findAll(ProductSpecifications.from(filter), stablePageable),
+				ProductResponse::from);
+	}
+
+	private void validatePriceRange(ProductFilter filter) {
+		Long min = filter.minPriceCents();
+		Long max = filter.maxPriceCents();
+		if (min != null && max != null && min > max) {
+			throw new InvalidProductQueryException("minPriceCents must not be greater than maxPriceCents");
+		}
 	}
 
 	private Sort sortFor(Pageable pageable) {
